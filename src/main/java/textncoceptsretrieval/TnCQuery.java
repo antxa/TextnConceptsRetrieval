@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 IXA Taldea, University of the Basque Country UPV/EHU
+ * Copyright (C) 2016 IXA Taldea, University of the Basque Country UPV/EHU
 
    This file is part of TextnConceptsRetrieval.
 
