@@ -98,13 +98,14 @@ public class CLI {
 	int nwords = Integer.parseInt(parsedArguments.getString("nwords"));
 	int nexp = Integer.parseInt(parsedArguments.getString("nexp"));
 	String shorter = parsedArguments.getString("shorter");
+	int ndocs = Integer.parseInt(parsedArguments.getString("ndocs"));
 	String host = parsedArguments.getString("host");
 	String port = parsedArguments.getString("port");
 	String index = parsedArguments.getString("index");
 	boolean debug = parsedArguments.getBoolean("debug");
 
 	TnCQuery tncQuery = new TnCQuery(host, port, index);
-	tncQuery.runQueries(queryList, index, type, markSource, markUrl, expdir, nwords, nexp, shorter, debug);
+	tncQuery.runQueries(queryList, index, type, markSource, markUrl, expdir, nwords, nexp, shorter, ndocs, debug);
     }
 
 
@@ -186,6 +187,10 @@ public class CLI {
 	    .choices("first", "last")
 	    .setDefault("first")
 	    .help("Makes the query shorter. FIRST or LAST nwords of each query will be used for querying; defaults to 'first'. Works only when input documents are formatted in NAF.\n");
+	queryParser.addArgument("--ndocs")
+	    .required(false)
+	    .setDefault("10")
+	    .help("Number of documents to retrieve; it defaults to '10'.\n");
 	queryParser.addArgument("--host")
 	    .required(false)
 	    .setDefault("localhost")

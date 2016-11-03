@@ -52,7 +52,7 @@ public class TnCQuery {
     }
 
 
-    public final void runQueries(String docs4queryingList, String index, String type, String markSource, String markUrl, String expdir, int nwords, int nexp, String shorter, boolean debug){
+    public final void runQueries(String docs4queryingList, String index, String type, String markSource, String markUrl, String expdir, int nwords, int nexp, String shorter, int ndocs, boolean debug){
 
 	long startTime = System.nanoTime();
 
@@ -221,8 +221,8 @@ public class TnCQuery {
 		solrQuery.set("defType","dismax");
 		solrQuery.set("fl","id,score");
 		solrQuery.setIncludeScore(true);
-		solrQuery.setRows(1001);
-		
+		solrQuery.setRows(ndocs + 1);
+				
 		QueryResponse response = solrjClient.query(solrQuery);  
 		if(debug){
 		    System.err.println("Query " + docname + " parameters: " + (String)response.getHeader().toString());
@@ -237,7 +237,7 @@ public class TnCQuery {
 
 		int rank = 1;
 		for (SolrDocument solrDoc: list){
-		    if(rank>1000)
+		    if(rank > ndocs)
 			break;
 		    String docId = (String)solrDoc.getFieldValue("id");
 		    if(docId.equals(docname)){
