@@ -39,6 +39,7 @@ public class CLI {
     private Subparsers subParsers = argParser.addSubparsers().help("sub-command help");
     private Subparser indexParser;
     private Subparser queryParser;
+    private Subparser queriesParser;
 
 
     public CLI() {
@@ -46,6 +47,8 @@ public class CLI {
 	loadIndexParameters();
 	queryParser = subParsers.addParser("query").help("Query CLI");
 	loadQueryParameters();
+	queriesParser = subParsers.addParser("queries").help("Queries CLI");
+	loadQueriesParameters();
     }
 
     
@@ -63,10 +66,12 @@ public class CLI {
 		index();
 	    } else if (args[0].equals("query")) {
 		query();
+	    } else if (args[0].equals("queries")) {
+		queries();
 	    }
 	} catch (ArgumentParserException e) {
 	    argParser.handleError(e);
-	    System.out.println("Run java -jar TextnConceptsRetrieval.jar (index|query) -help for details");
+	    System.out.println("Run java -jar TextnConceptsRetrieval.jar (index|query|queries) -help for details");
 	    System.exit(1);
 	}
     }
@@ -88,8 +93,27 @@ public class CLI {
 	tncIndex.index(docList, type, expdir, nwords, nexp, shorter, index, commit);
     }
 
-    
     public final void query(){
+	String qFile = parsedArguments.getString("qfile");
+	String type = parsedArguments.getString("type");
+	String markSource = parsedArguments.getString("mark");
+	String markUrl = parsedArguments.getString("url");
+	String expdir = parsedArguments.getString("expdir");
+	int nwords = Integer.parseInt(parsedArguments.getString("nwords"));
+	int nexp = Integer.parseInt(parsedArguments.getString("nexp"));
+	String shorter = parsedArguments.getString("shorter");
+	int ndocs = Integer.parseInt(parsedArguments.getString("ndocs"));
+	String host = parsedArguments.getString("host");
+	String port = parsedArguments.getString("port");
+	String index = parsedArguments.getString("index");
+	boolean debug = parsedArguments.getBoolean("debug");
+
+	TnCQuery tncQuery = new TnCQuery(host, port, index);
+	tncQuery.runQuery(qFile, index, type, markSource, markUrl, expdir, nwords, nexp, shorter, ndocs, debug);
+    }
+
+
+    public final void queries(){
 	String queryList = parsedArguments.getString("queries");
 	String type = parsedArguments.getString("type");
 	String markSource = parsedArguments.getString("mark");
@@ -155,7 +179,7 @@ public class CLI {
 
 
     private void loadQueryParameters() {
-	queryParser.addArgument("-q", "--queries")
+	queryParser.addArgument("-q", "--qfile")
 	    .required(true)
 	    .help("File with a document list to be queried\n");
 	queryParser.addArgument("-t", "--type")
@@ -203,6 +227,63 @@ public class CLI {
 	    .required(true)
 	    .help("Solr index name.\n");
 	queryParser.addArgument("--debug")
+	    .choices(true,false)
+	    .type(Boolean.class)
+	    .required(false)
+	    .setDefault(false)
+	    .help("Enable if you want to debug the query.\n");
+    }
+
+
+    private void loadQueriesParameters() {
+	queriesParser.addArgument("-q", "--queries")
+	    .required(true)
+	    .help("File with a document list to be queried\n");
+	queriesParser.addArgument("-t", "--type")
+	    .required(false)
+	    .choices("text","concepts","expansion","all")
+	    .setDefault("text")
+	    .help("Type of the query: 'text' (only raw text), 'concepts' (only concepts), 'expansion' (concepts + expansion) or 'all' (text + concepts + expansion); it defaults to 'text'. If 'concepts', 'expansion' or 'all' selected, input queries must be formatted in NAF. If 'expansion' selected, 'expdir' path must be specified\n");
+	queriesParser.addArgument("-m", "--mark")
+	    .required(false)
+	    .setDefault("DBpedia_spotlight")
+	    .help("Value of the 'source' attribute of <mark> elements in NAF documents to be used as concepts; it defaults to 'DBpedia_spotlight'. Required if 'type' specified as 'concepts', 'expansion' or 'all'.\n");
+	queriesParser.addArgument("-u", "--url")
+	    .required(false)
+	    .setDefault("http://dbpedia.org/resource/")
+	    .help("Base of the URL in 'reference' attribute of the <externalRef> element in NAF documents; it defaults to 'http://dbpedia.org/resource/' (for example, for http://dbpedia.org/resource/Time_standard). Required if 'type' specified as 'concepts', 'expansion' or 'all'.\n");
+	queriesParser.addArgument("-e", "--expdir")
+	    .required(false)
+	    .help("Path to a directory containing expansion files (PPV files). Required if 'type¡ is specified as 'expansion' or 'all'\n");
+	queriesParser.addArgument("--nwords")
+	    .required(false)
+	    .setDefault("-1")
+	    .help("Number of words to use for querying; it defaults to '-1' (use all words). Works only when input documents are formatted in NAF.\n");
+	queriesParser.addArgument("--nexp")
+	    .required(false)
+	    .setDefault("-1")
+	    .help("Number of expansion concepts to use for querying; it dedaults to '0'. Works only when 'type' is specified as 'expansion' or 'all'.\n");
+	queriesParser.addArgument("-s", "--shorter")
+	    .required(false)
+	    .choices("first", "last")
+	    .setDefault("first")
+	    .help("Makes the query shorter. FIRST or LAST nwords of each query will be used for querying; defaults to 'first'. Works only when input documents are formatted in NAF.\n");
+	queriesParser.addArgument("--ndocs")
+	    .required(false)
+	    .setDefault("10")
+	    .help("Number of documents to retrieve; it defaults to '10'.\n");
+	queriesParser.addArgument("--host")
+	    .required(false)
+	    .setDefault("localhost")
+	    .help("Hostname name where Solr server is running; it defaults to 'localhost'.\n");
+	queriesParser.addArgument("--port")
+	    .required(false)
+	    .setDefault("8983")
+	    .help("Port number where Solr server is running; defaults to '8983'.\n");
+	queriesParser.addArgument("-i","--index")
+	    .required(true)
+	    .help("Solr index name.\n");
+	queriesParser.addArgument("--debug")
 	    .choices(true,false)
 	    .type(Boolean.class)
 	    .required(false)

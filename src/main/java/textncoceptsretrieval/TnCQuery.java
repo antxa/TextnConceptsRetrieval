@@ -41,7 +41,8 @@ import org.jdom2.JDOMException;
 import ixa.kaflib.KAFDocument;
 import ixa.kaflib.Mark;
 import ixa.kaflib.WF;
-
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 public class TnCQuery {
     
@@ -51,6 +52,227 @@ public class TnCQuery {
 	solrjClient = new SolrjClient(host, port, index);
     }
 
+    
+    public final void runQuery(String qFile, String index, String type, String markSource, String markUrl, String expdir, int nwords, int nexp, String shorter, int ndocs, boolean debug){
+
+	long startTime = System.nanoTime();
+	String warning = "";
+	JSONObject resultJson = new JSONObject();
+	JSONObject responseJson = new JSONObject();
+	JSONArray docsArray = new JSONArray();
+
+	try{
+	    String qfield = type;
+	    if(type.equals("all")){
+		qfield = "text^1.0 concepts^1.0";
+	    }
+	    if(type.equals("expansion")){
+		qfield = "concepts";
+	    }
+
+	    String docname = FilenameUtils.getBaseName(qFile);
+	    if(qFile.contains("bz2")){
+		docname = FilenameUtils.getBaseName(docname);
+	    }
+
+	    String query = "";
+	    if(type.equals("text") && (nwords == -1)){
+		BufferedReader br = new BufferedReader(new FileReader(qFile));
+		StringBuffer text = new StringBuffer();
+		String line = null;
+		while((line = br.readLine()) != null ){
+		    text.append( line );
+		}
+		query = text.toString();
+	    }
+	    else{ // (type = 'concepts', 'expansion' or 'all') OR (type = 'text' AND nwords != -1). So, extract query from NAF document
+		Reader reader;
+		if(qFile.contains("bz2")){
+		    InputStream nafFileStream = new BufferedInputStream (new FileInputStream (qFile));
+		    BZip2InputStream nafInputStream = new BZip2InputStream (nafFileStream, false);
+		    reader = new BufferedReader(new InputStreamReader(nafInputStream));
+		}
+		else{
+		    reader = new BufferedReader(new FileReader(qFile));
+		}
+
+		KAFDocument naf = KAFDocument.createFromStream(reader);
+		List<WF> wfs = naf.getWFs();
+		int ntokensDoc = wfs.size();
+		int begin = -1;
+		int end = -1;
+		if(nwords == -1){
+		    begin = 0;
+		    end = ntokensDoc;
+		}
+		else if(shorter.equals("first")){
+		    begin = 0;
+		    if(nwords < ntokensDoc){
+			end = nwords;
+		    }
+		    else{
+			end = ntokensDoc;
+		    }
+		}
+		else{
+		    end = ntokensDoc;
+		    if(nwords < ntokensDoc){
+			begin = ntokensDoc - nwords;
+		    }
+		    else{
+			begin = 0;
+		    }
+		}
+		
+		int offset = wfs.get(begin).getOffset();
+		String firstWfId = "";
+		String lastWfId = "";
+		for (int i = begin; i < end; i++) {
+		    WF wf = wfs.get(i);
+		    if(i == begin){
+			firstWfId = wf.getId();
+		    }
+		    lastWfId = wf.getId();
+		    if (offset != wf.getOffset()){
+			while(offset < wf.getOffset()) {
+			    if((type.equals("all")) || (type.equals("text"))){
+				query += " ";
+			    }
+			    offset += 1;
+			}
+		    }
+		    if((type.equals("all")) || (type.equals("text"))){
+			query += wf.getForm();
+		    }
+		    offset += wf.getLength();
+		}
+		
+		if((type.equals("all")) || (type.equals("concepts")) || (type.equals("expansion"))){
+		    List<Mark> markables = naf.getMarks(markSource);
+		    if(markables.size() == 0){
+			warning += " No wikipedia concepts.";
+		    }
+		    for(Mark mark : markables){
+			//int markWfId = Integer.parseInt(mark.getSpan().getFirstTarget().getId().replace("w",""));
+			//if(shorter.equals("first") && (Integer.parseInt(lastWfId.replace("w","")) < markWfId)){
+			//	break;
+			//}
+			//if(shorter.equals("last") && (Integer.parseInt(firstWfId.replace("w","")) > markWfId)){
+			//continue;
+			//}
+			String concept = mark.getExternalRefs().get(0).getReference().replace(markUrl,"");
+			query += " " + concept;
+		    }
+		    if(type.equals("expansion") || type.equals("all")){
+			String ppvfile = expdir + "/" + docname + ".ppv";
+			if(! new File(ppvfile).exists()) {
+			    warning += " " + ppvfile + " expansion file not found.";
+			}
+			else{
+			    BufferedReader expFile = new BufferedReader(new FileReader(ppvfile));
+			    String exp = null;
+			    int i = 0;
+			    while((exp = expFile.readLine()) != null){
+				if(exp.startsWith("!! -v")){
+				    continue;
+				}
+				if(i==nexp)
+				    break;
+				query += " " + exp.split("\t")[0];	
+				i++;
+			    }
+			}
+		    }
+		}	
+	    }
+
+	    SolrQuery solrQuery = new SolrQuery();
+	    // Escape Solr special characters
+	    // + - && || ! ( ) { } [ ] ^ " ~ * ? : \ /
+	    // ClientUtils.escapeQueryChars(S) not working properly
+	    query = query.replace("\\","\\\\");  
+	    query = query.replace("+","\\+");
+	    query = query.replace("-","\\-");
+	    query = query.replace("&&","\\&&");
+	    query = query.replace("||","\\||");
+	    query = query.replace("!","\\!");
+	    query = query.replace("(","\\(");
+	    query = query.replace(")","\\)");
+	    query = query.replace("{","\\{");
+	    query = query.replace("}","\\}");
+	    query = query.replace("[","\\[");
+	    query = query.replace("]","\\]");
+	    query = query.replace("^","\\^");
+	    query = query.replace("\"","\\\"");
+	    query = query.replace("~","\\~");
+	    query = query.replace("*","\\*");
+	    query = query.replace("?","\\?");
+	    query = query.replace(":","\\:");
+	    query = query.replace("/","\\/");
+	    
+	    solrQuery.set("q",query);
+	    solrQuery.set("qf",qfield);
+	    solrQuery.set("defType","dismax");
+	    solrQuery.set("fl","id,score");
+	    solrQuery.setIncludeScore(true);
+	    solrQuery.setRows(ndocs + 1);	
+	    
+	    QueryResponse response = solrjClient.query(solrQuery);  
+	    if(debug){
+		System.err.println("Query " + docname + " parameters: " + (String)response.getHeader().toString());
+	    }
+	    SolrDocumentList list = response.getResults();
+	    
+	    if(list.getNumFound() == 0){
+		warning += " No docs found for the query.";
+		responseJson.put("numFound", new Integer(0));
+	    }
+	    
+	    int rank = 1;
+	    for (SolrDocument solrDoc: list){
+		if(rank > ndocs)
+		    break;
+		String docId = (String)solrDoc.getFieldValue("id");
+		if(docId.equals(docname)){
+		    if(list.getNumFound() == 1){
+			warning += "Only 1 doc (itself) found for the query.";
+			responseJson.put("numFound", new Integer(0));
+		    }
+		    continue;
+		}
+		
+		JSONObject docJson = new JSONObject();
+		docJson.put("id",docId);
+		docJson.put("score",solrDoc.getFieldValue("score"));
+		docsArray.add(docJson);
+		
+		rank++;
+	    }
+	    responseJson.put("numFound",new Integer(rank-1));
+	    responseJson.put("docs",docsArray);
+	    
+	} catch (JDOMException e){
+	    e.printStackTrace();
+	} catch (IOException e){
+	    e.printStackTrace();
+	}
+	finally{
+	    solrjClient.close();
+	    
+	    long difference = System.nanoTime() - startTime;
+	    long hours = TimeUnit.NANOSECONDS.toHours(difference);
+	    difference -= TimeUnit.HOURS.toNanos(hours);
+	    long minutes = TimeUnit.NANOSECONDS.toMinutes(difference);
+	    difference -= TimeUnit.MINUTES.toNanos(minutes);
+	    long seconds = TimeUnit.NANOSECONDS.toSeconds(difference);
+	    
+	    resultJson.put("QTime",String.format("%d h, %d min, %d sec", hours, minutes, seconds));
+	    resultJson.put("response", responseJson);
+	    resultJson.put("warning", warning);
+	
+	    System.out.println(resultJson.toJSONString());
+	}
+    }
 
     public final void runQueries(String docs4queryingList, String index, String type, String markSource, String markUrl, String expdir, int nwords, int nexp, String shorter, int ndocs, boolean debug){
 

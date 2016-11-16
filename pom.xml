@@ -4,7 +4,7 @@
  
   <groupId>textnconceptsretrieval</groupId>
   <artifactId>TextnConceptsRetrieval</artifactId>
-  <version>1.1.0</version>
+  <version>1.2.0</version>
   <packaging>jar</packaging>
  
   <name>example</name>
@@ -49,6 +49,12 @@
       <groupId>com.github.ixa-ehu</groupId>
       <artifactId>kaflib-naf</artifactId>
       <version>1.1.14</version> 
+    </dependency>
+
+    <dependency>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1</version>
     </dependency>
 
     <dependency>
