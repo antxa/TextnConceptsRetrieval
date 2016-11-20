@@ -158,6 +158,7 @@ your navigator the Solr admin interface and the browse interface of
 the already created 'textnconcepts' index here:
 
 [http://localhost:8983/solr/#/textnconcepts](http://localhost:8983/solr/#/textnconcepts)
+
 [http://localhost:8983/solr/textnconcepts/browse](http://localhost:8983/solr/textnconcepts/browse)
 
 Also RESTful web service is running listening on port 8080.
