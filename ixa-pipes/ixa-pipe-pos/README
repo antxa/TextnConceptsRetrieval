@@ -1,0 +1,8 @@
+Copy to this directory the following files:
+ - ixa-pipe-pos jar file
+ - English and Spanish models for PoS tagging
+ - English and Spanish lemmatizer models
+
+Follow the instructions at https://github.com/ixa-ehu/ixa-pipe-pos for
+compiling the ixa-pipe-pos tool, and also to obtain the required
+models.
