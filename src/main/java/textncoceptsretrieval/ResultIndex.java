@@ -22,12 +22,18 @@
 package textnconceptsretrieval;
 
 import java.util.List;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 
 
+@ApiModel("Index Result")
 public class ResultIndex {
 
+    @ApiModelProperty(value = "number of indexed documents", required = true)
     private final int numIndexed;
+    @ApiModelProperty(value = "indexation time", required = true)
     private final String time;
+    @ApiModelProperty(value = "warning messages", required = true)
     private final String warning;
 
 

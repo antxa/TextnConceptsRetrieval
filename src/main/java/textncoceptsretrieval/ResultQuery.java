@@ -22,13 +22,20 @@
 package textnconceptsretrieval;
 
 import java.util.List;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 
 
+@ApiModel("Query Result")
 public class ResultQuery {
 
+    @ApiModelProperty(value = "list of retrieved documents", required = true)
     private final List<ResultDoc> resultQuery;
+    @ApiModelProperty(value = "number of retrieved documents", required = true)
     private final int numFound;
+    @ApiModelProperty(value = "querying time", required = true)
     private final String time;
+    @ApiModelProperty(value = "warning messages", required = true)
     private final String warning;
 
 

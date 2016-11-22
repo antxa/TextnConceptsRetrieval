@@ -21,9 +21,16 @@
 
 package textnconceptsretrieval;
 
-public class ResultDoc {
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 
+
+@ApiModel("Retrieved document")
+public class ResultDoc {
+    
+    @ApiModelProperty(value = "score of the retrieved document", required = true)
     private float score;
+    @ApiModelProperty(value = "id of the retrieved document", required = true)
     private final String id;
 
     public ResultDoc(float score, String id) {
