@@ -21,6 +21,8 @@
 
 package textnconceptsretrieval;
 
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import org.springframework.http.MediaType;
 import org.springframework.boot.SpringApplication;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,12 +40,14 @@ import springfox.documentation.service.ApiInfo;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
+import springfox.documentation.service.Contact;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import io.swagger.annotations.ResponseHeader;
+import io.swagger.annotations.Api;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -52,23 +56,23 @@ import java.util.HashMap;
 @SpringBootApplication
 @EnableSwagger2
 @RestController
+@Api(description = "REST requests")
 public class Application {
 
-    
-    @ApiOperation(value = "Submit a query", notes = "Retrieves a list of documents in JSON format given a query file.", response = ResultQuery.class)
+    @ApiOperation(value = "Submit a query", notes = "Given a query file, retrieves a list of documents in JSON format", response = ResultQuery.class)
     @RequestMapping(value = "/query", method = RequestMethod.POST, produces = "application/json" )
     @ApiImplicitParams({
-	    @ApiImplicitParam(name = "qfile", value = "Text file sent as body parameter. The content of the file (text) will be used as a query.", required = true, dataType = "MultipartFile", paramType = "body"),
-		@ApiImplicitParam(name = "lang", value = "Language of the text in qfile.", allowableValues = "en, es", required = true, dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "type", value = "Type of the query: 'text' (only raw text), 'concepts' (only concepts), 'all' (text + concepts).", allowableValues = "text, concepts, all", required = false, defaultValue = "text", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "mark", value = "Value of the 'source' attribute of 'mark' elements in NAF documents to be used as concepts.", required = false, defaultValue = "DBpedia_spotlight", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "url", value = "Base of the URL in 'reference' attribute of the 'externalRef' element in NAF documents.", required = false, defaultValue = "http://dbpedia.org/resource/", dataType = "string", paramType = "query", example = "'http://dbpedia.org/resource/' for lang=en and 'http://es.dbpedia.org/resource/' for lang=es"),
-		@ApiImplicitParam(name = "nwords", value = "Number of words to use for querying.", required = false, defaultValue = "-1 (all words)", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "shorter", value = "Makes the query shorter. FIRST or LAST nwords of each query will be used for querying.", allowableValues = "first, last", required = false, defaultValue = "first", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "ndocs", value = "Number of documents to retrieve.", required = false, defaultValue = "10", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "host", value = "Hostname where Solr server is running.", required = false, defaultValue = "localhost", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "port", value = "Port number where Solr server is running.", required = false, defaultValue = "8983", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "index", value = "Solr index name.", required = false, defaultValue = "textnconcepts", dataType = "string", paramType = "query"),
+	    @ApiImplicitParam(name = "qfile", value = "Text file sent as body parameter. The content of the file (text) will be used as a query", required = true, dataType = "MultipartFile", paramType = "body"),
+		@ApiImplicitParam(name = "lang", value = "Language of the text in qfile", allowableValues = "en, es", required = true, dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "type", value = "Type of the query: 'text' (only raw text), 'concepts' (only concepts), 'all' (text + concepts)", allowableValues = "text, concepts, all", required = false, defaultValue = "text", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "mark", value = "Value of the 'source' attribute of 'mark' elements in NAF documents to be used as concepts", required = false, defaultValue = "DBpedia_spotlight", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "url", value = "Base of the URL in 'reference' attribute of the 'externalRef' element in NAF documents", required = false, defaultValue = "http://dbpedia.org/resource/", dataType = "string", paramType = "query", example = "'http://dbpedia.org/resource/' for lang=en and 'http://es.dbpedia.org/resource/' for lang=es"),
+		@ApiImplicitParam(name = "nwords", value = "Number of words to use for querying. '-1' for all words", required = false, defaultValue = "-1", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "shorter", value = "Makes the query shorter. FIRST or LAST nwords of each query will be used for querying", allowableValues = "first, last", required = false, defaultValue = "first", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "ndocs", value = "Number of documents to retrieve", required = false, defaultValue = "10", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "host", value = "Hostname where Solr server is running", required = false, defaultValue = "localhost", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "port", value = "Port number where Solr server is running", required = false, defaultValue = "8983", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "index", value = "Solr index name", required = false, defaultValue = "textnconcepts", dataType = "string", paramType = "query"),
 		@ApiImplicitParam(name = "debug", allowableValues = "true, false", required = false, defaultValue = "false", dataType = "string", paramType = "query")})	
     public ResultQuery query(@RequestParam(value="qfile") MultipartFile qfile,
 			     @RequestParam(value="lang", required=false, defaultValue="en") String lang,
@@ -130,19 +134,19 @@ public class Application {
     }
 
 
-    @ApiOperation(value = "Index documents", notes = "Index documents from a directory.", response = ResultIndex.class)
+    @ApiOperation(value = "Index documents", notes = "Index documents from a directory", response = ResultIndex.class)
     @RequestMapping(value = "/index", method = RequestMethod.POST, produces = "application/json")
     @ApiImplicitParams({
-	    @ApiImplicitParam(name = "docsDir", value = "Path to a directory containing the documents to be indexed. It should be 'docs4indexing' or a subdirectory inside this directory.", allowableValues = "'docs4indexing' or a subdirectory inside this directory.", required = true, defaultValue = "", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "lang", value = "Language of the documents.", allowableValues = "en, es", required = true, dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "type", value = "Type of the indexation: 'text' (only raw text) or 'concepts' (text + concepts).", allowableValues = "text, concepts", required = false, defaultValue = "text", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "mark", value = "Value of the 'source' attribute of 'mark' elements in NAF documents to be used as concepts.", required = false, defaultValue = "DBpedia_spotlight", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "url", value = "Base of the URL in 'reference' attribute of the 'externalRef' element in NAF documents.", required = false, defaultValue = "http://dbpedia.org/resource/", dataType = "string", paramType = "query", example = "'http://dbpedia.org/resource/' for lang=en and 'http://es.dbpedia.org/resource/' for lang=es"),
-		@ApiImplicitParam(name = "nwords", value = "Number of words to index from each document.", required = false, defaultValue = "-1 (all words)", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "shorter", value = "Makes all the document shorter. It indexes part of each document. FIRST or LAST nwords of each document will be indexed.", allowableValues = "first, last", required = false, defaultValue = "first", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "host", value = "Hostname where Solr server is running.", required = false, defaultValue = "localhost", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "port", value = "Port number where Solr server is running.", required = false, defaultValue = "8983", dataType = "string", paramType = "query"),
-		@ApiImplicitParam(name = "index", value = "Solr index name.", required = false, defaultValue = "textnconcepts", dataType = "string", paramType = "query"),
+	    @ApiImplicitParam(name = "docsDir", value = "Path to a directory containing the documents to be indexed. It should be 'docs4indexing' or a subdirectory inside this directory", required = true, defaultValue = "", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "lang", value = "Language of the documents", allowableValues = "en, es", required = true, dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "type", value = "Type of the indexation: 'text' (only raw text) or 'concepts' (text + concepts)", allowableValues = "text, concepts", required = false, defaultValue = "text", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "mark", value = "Value of the 'source' attribute of 'mark' elements in NAF documents to be used as concepts", required = false, defaultValue = "DBpedia_spotlight", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "url", value = "Base of the URL in 'reference' attribute of the 'externalRef' element in NAF documents", required = false, defaultValue = "http://dbpedia.org/resource/", dataType = "string", paramType = "query", example = "'http://dbpedia.org/resource/' for lang=en and 'http://es.dbpedia.org/resource/' for lang=es"),
+		@ApiImplicitParam(name = "nwords", value = "Number of words to index from each document. '-1' for indexing all words", required = false, defaultValue = "-1", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "shorter", value = "Makes all the document shorter. It indexes part of each document. FIRST or LAST nwords of each document will be indexed", allowableValues = "first, last", required = false, defaultValue = "first", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "host", value = "Hostname where Solr server is running", required = false, defaultValue = "localhost", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "port", value = "Port number where Solr server is running", required = false, defaultValue = "8983", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "index", value = "Solr index name", required = false, defaultValue = "textnconcepts", dataType = "string", paramType = "query"),
 		@ApiImplicitParam(name = "debug", allowableValues = "true, false", required = false, defaultValue = "false", dataType = "string", paramType = "query")})	
     public ResultIndex index(@RequestParam(value="docsDir") String docsDir,
 			     @RequestParam(value="lang", required=false, defaultValue="en") String lang,
@@ -202,31 +206,81 @@ public class Application {
 	return result;
     }
 
+    
+    @ApiOperation(value = "Get concepts", notes = "Given a document, returns a list of concepts derived from the document", response = ResultQuery.class)
+    @RequestMapping(value = "/concepts", method = RequestMethod.POST, produces = "application/json" )
+    @ApiImplicitParams({
+	    @ApiImplicitParam(name = "doc", value = "Text file sent as body parameter", required = true, dataType = "MultipartFile", paramType = "body"),
+		@ApiImplicitParam(name = "lang", value = "Language of the text of the document", allowableValues = "en, es", required = true, dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "mark", value = "Value of the 'source' attribute of 'mark' elements in NAF documents", required = false, defaultValue = "DBpedia_spotlight", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "url", value = "Base of the URL in 'reference' attribute of the 'externalRef' element in NAF documents", required = false, defaultValue = "http://dbpedia.org/resource/", dataType = "string", paramType = "query", example = "'http://dbpedia.org/resource/' for lang=en and 'http://es.dbpedia.org/resource/' for lang=es"),
+		@ApiImplicitParam(name = "debug", allowableValues = "true, false", required = false, defaultValue = "false", dataType = "string", paramType = "query")})	
+    public ResultConcepts concepts(@RequestParam(value="doc") MultipartFile doc,
+			     @RequestParam(value="lang", required=true) String lang,
+			     @RequestParam(value="mark", required=false, defaultValue="DBpedia_spotlight") String markSource,
+			     @RequestParam(value="url", required=false, defaultValue="") String markUrl,
+			     @RequestParam(value="debug", required=false, defaultValue="false") String debug)
+	throws UnsatisfiedServletRequestParameterException {
+
+	if(!lang.equals("en") && !lang.equals("es")){
+	    String[] paramConditions = {"en","es"};
+	    String[] actual = {lang};
+	    Map<String,String[]> actualParams = new HashMap<String, String[]>();
+	    actualParams.put("lang", actual);
+	    throw new UnsatisfiedServletRequestParameterException(paramConditions,actualParams);
+	}
+	if(!debug.equals("true") && !debug.equals("false")){
+	    String[] paramConditions = {"true","false"};
+	    String[] actual = {debug};
+	    Map<String,String[]> actualParams = new HashMap<String, String[]>();
+	    actualParams.put("debug", actual);
+	    throw new UnsatisfiedServletRequestParameterException(paramConditions,actualParams);
+	}
+
+	if(markUrl.equals("")){
+	    if(lang.equals("en")){
+		markUrl = "http://dbpedia.org/resource/";
+	    }
+	    else if(lang.equals("es")){
+		markUrl = "http://es.dbpedia.org/resource/";
+	    }
+	}
+
+
+	TnCConcepts tncConcepts = new TnCConcepts();
+	ResultConcepts result = tncConcepts.getConcepts(doc, lang, markSource, markUrl, debug);
+	
+	return result;
+    }
+
+
+
    
     @Bean
     public Docket swaggerSettings() {
         return new Docket(DocumentationType.SWAGGER_2)
 	    .select()
 	    .apis(RequestHandlerSelectors.any())
-	    // .apiInfo(apiInfo2())
-	    .paths(PathSelectors.any())
+	    .paths(Predicates.not(PathSelectors.regex("/error"))) 
 	    .build()
-	    .pathMapping("/");
+	    .pathMapping("/")
+	    .apiInfo(apiInfo());
     }
 
-    /*
-    private ApiInfo apiInfo2() {
-        return new ApiInfoBuilder()
-                .title("Spring REST Sample with Swagger ARANTXAtitle")
-                .description("Spring REST Sample with Swagger ARANTXAdesc")
-                .termsOfServiceUrl("http://www-03.ibm.com/software/sla/sladb.nsf/sla/bm?Open")
-                .contact("Arantxa Otegi")
-                .license("Apache License Version 2.0")
-                .licenseUrl("https://github.com/IBM-Bluemix/news-aggregator/blob/master/LICENSE")
-                .version("2.0")
-                .build();
+
+    private ApiInfo apiInfo() {
+        ApiInfo apiInfo = new ApiInfo(
+            "TextnConceptsRetrieval REST API",
+            "This is a REST API for retrieving documents, based on text and concepts.",
+            "",
+            "",
+            new Contact("Arantxa Otegi", "", "arantza.otegi@ehu.eus"),
+            "GNU General Public License",
+            "http://www.gnu.org/licenses"
+        );
+        return apiInfo;
     }
-    */
+
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
