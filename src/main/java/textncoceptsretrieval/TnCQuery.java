@@ -44,6 +44,7 @@ import org.jdom2.JDOMException;
 import ixa.kaflib.KAFDocument;
 import ixa.kaflib.Mark;
 import ixa.kaflib.WF;
+import ixa.kaflib.ExternalRef;
 import org.springframework.web.multipart.MultipartFile;
 
 
@@ -64,20 +65,33 @@ public class TnCQuery {
 	List<ResultDoc> listResultDocs = new ArrayList<ResultDoc>();
 
 	try{
-	    String qfield = type;
-	    if(type.equals("all")){
-		qfield = "text^1.0 concepts^1.0";
+	    String qfield = "";
+	    if(type.equals("mono")){
+		if(lang.equals("en")){
+		    qfield = "text_en";
+		}
+		else if(lang.equals("es")){
+		    qfield = "text_es";
+		}
 	    }
+	    else if(type.equals("cross")){
+		if(lang.equals("en")){
+		    qfield = "text_en^1.0 concepts^1.0";
+		}
+		else if(lang.equals("es")){
+		    qfield = "text_es^1.0 concepts^1.0";
+		}
+	    }
+
 
 	    String docname = FilenameUtils.getBaseName(qFile.getOriginalFilename());
 
 	    String query = "";
-	    if(type.equals("text") && (nwords == -1)){
+	    if(type.equals("mono") && (nwords == -1)){
 		query = IOUtils.toString(new ByteArrayInputStream(qFile.getBytes()), "UTF-8");
 	    }
-	    else{ // (type = 'concepts' or 'all') OR (type = 'text' AND nwords != -1). So, extract query from a NAF document
-
-		File tmpFile = File.createTempFile("q", ".tmp");
+	    else{ // (type = 'cross') OR (type = 'mono' AND nwords != -1). So, extract query from a NAF document
+		File tmpFile = File.createTempFile("query", ".tmp");
 		tmpFile.deleteOnExit();
 		String tmpFileName = tmpFile.getAbsolutePath();
 		FileUtils.writeStringToFile(tmpFile, IOUtils.toString(new ByteArrayInputStream(qFile.getBytes()), "UTF-8"));
@@ -94,6 +108,7 @@ public class TnCQuery {
 		String outputPipes = "";
 		String outputLinePipes = "";
 		Reader reader = new BufferedReader(new InputStreamReader(pPipes.getInputStream(), "UTF-8"));
+		KAFDocument naf = KAFDocument.createFromStream(reader);
 
 		if(debug.equals("true")){
 		    String errorPipes = "";
@@ -106,7 +121,6 @@ public class TnCQuery {
 
 		pPipes.waitFor();
 
-		KAFDocument naf = KAFDocument.createFromStream(reader);
 		List<WF> wfs = naf.getWFs();
 		int ntokensDoc = wfs.size();
 		int begin = -1;
@@ -145,26 +159,27 @@ public class TnCQuery {
 		    lastWfId = wf.getId();
 		    if (offset != wf.getOffset()){
 			while(offset < wf.getOffset()) {
-			    if((type.equals("all")) || (type.equals("text"))){
-				query += " ";
-			    }
+			    query += " ";
 			    offset += 1;
 			}
 		    }
-		    if((type.equals("all")) || (type.equals("text"))){
-			query += wf.getForm();
-		    }
+		    query += wf.getForm();
 		    offset += wf.getLength();
 		}
-		
-		if((type.equals("all")) || (type.equals("concepts"))){
+
+		if(type.equals("cross")){
 		    List<Mark> markables = naf.getMarks(markSource);
 		    if(markables.size() == 0){
 			warning += " No wikipedia concepts.";
 		    }
 		    for(Mark mark : markables){
-			String concept = mark.getExternalRefs().get(0).getReference().replace(markUrl,"");
-			query += " " + concept;
+			ExternalRef extRef1 = mark.getExternalRefs().get(0);
+			if(lang.equals("en")){
+			    query += " " + extRef1.getReference().replace(markUrl,"");
+			}
+			else if(lang.equals("es") && extRef1.getExternalRefs().size() > 0){
+			    query += " " + extRef1.getExternalRefs().get(0).getReference().replace(markUrl,"");
+			}
 		    }
 		}	
 	    }
@@ -237,7 +252,10 @@ public class TnCQuery {
 	    e.printStackTrace();
 	} catch (IOException e){
 	    e.printStackTrace();
+	} catch (Exception e){
+	    e.printStackTrace();
 	}
+	
 	finally{
 	    solrjClient.close();
 	    

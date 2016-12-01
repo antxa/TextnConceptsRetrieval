@@ -1,4 +1,6 @@
-Copy to this directory the ixa-pipe-wikify jar file.
+Copy to this directory the following files:
+ - ixa-pipe-wikify jar file
+ - MapDB database files for Spanish crosslingual links
 
 Follow the instructions at https://github.com/ixa-ehu/ixa-pipe-wikify for
 compiling the ixa-pipe-wikify tool.

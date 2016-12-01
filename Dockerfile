@@ -90,7 +90,7 @@ USER $SOLR_USER
 
 VOLUME /tmp
 
-COPY target/TextnConceptsRetrieval-2.1.0.jar TextnConceptsRetrieval.jar
+COPY target/TextnConceptsRetrieval-*.jar TextnConceptsRetrieval.jar
 COPY scripts/docker-entrypoint.sh /
 
 ENV JAVA_OPTS=""

@@ -42,6 +42,7 @@ import org.jdom2.JDOMException;
 import ixa.kaflib.KAFDocument;
 import ixa.kaflib.Mark;
 import ixa.kaflib.WF;
+import ixa.kaflib.ExternalRef;
 
 
 public class TnCIndex {
@@ -54,7 +55,7 @@ public class TnCIndex {
     }
 
     
-    public final ResultIndex index(String docDir, String lang, String type, String markSource, String markUrl, int nwords, String shorter, String index, String debug){
+    public final ResultIndex index(String docDir, String lang, String markSource, String markUrl, int nwords, String shorter, String index, String debug){
 
 	long startTime = System.nanoTime();
 	String warning = "";
@@ -73,54 +74,41 @@ public class TnCIndex {
 	    for (File file : fList){
 		if (file.isFile()){
 		    System.err.println("Indexing document " + file.getName());
+
 		    solrDoc = new SolrInputDocument();
 		    String docId = FilenameUtils.getBaseName(file.getName());
 		    solrDoc.addField("id", docId);
 		    String rawText = "";
+		    String wikiText = "";
 
-		    if(type.equals("text") && (nwords == -1)){
-			// Get and index raw text
-			rawText = FileUtils.readFileToString(file, "UTF-8");
+		    // run ixa-pipes
+		    String ixaPipes = "cat " + docDir + "/" + file.getName() + " | ixa-pipe-tok-" + lang + ".sh | ixa-pipe-pos-" + lang + ".sh | ixa-pipe-wikify-" + lang + ".sh";
+		    String[] cmdPipes = {
+			"/bin/sh",
+			"-c",
+			ixaPipes
+		    };
+		    Process pPipes = Runtime.getRuntime().exec(cmdPipes);
+		    
+		    String outputPipes = "";
+		    String outputLinePipes = "";
+		    Reader reader = new BufferedReader(new InputStreamReader(pPipes.getInputStream(), "UTF-8"));
+		    KAFDocument naf = KAFDocument.createFromStream(reader);
+
+		    if(debug.equals("true")){
+			String errorPipes = "";
+			BufferedReader errorPipesStream = new BufferedReader(new InputStreamReader(pPipes.getErrorStream()));
+			while((errorPipes = errorPipesStream.readLine()) != null){
+			    warning += "[IXA-PIPES] " + errorPipes;
+			}
+			errorPipesStream.close();
 		    }
-		    else if((type.equals("concepts") || type.equals("concepts-naf")) && (nwords == -1)){
-			// Get and index raw text and wikification (from NAF files)
-			// concepts --> Get NAF document running ixa-pipes
-			// concepts-naf --> The input document is already a NAF document
-			String wikiText = "";
-			Reader reader;
-			if(type.equals("concepts-naf")){
-			    reader = new BufferedReader(new FileReader(file.getName()));
-			}
-			else{ // type=concepts
-			    // run ixa-pipes
-			    String ixaPipes = "cat " + docDir + "/" + file.getName() + " | ixa-pipe-tok-" + lang + ".sh | ixa-pipe-pos-" + lang + ".sh | ixa-pipe-wikify-" + lang + ".sh";
-			    String[] cmdPipes = {
-				"/bin/sh",
-				"-c",
-				ixaPipes
-			    };
-			    Process pPipes = Runtime.getRuntime().exec(cmdPipes);
 
-			    String outputPipes = "";
-			    String outputLinePipes = "";
-			    reader = new BufferedReader(new InputStreamReader(pPipes.getInputStream(), "UTF-8"));
+		    pPipes.waitFor();
 
-			    if(debug.equals("true")){
-				String errorPipes = "";
-				BufferedReader errorPipesStream = new BufferedReader(new InputStreamReader(pPipes.getErrorStream()));
-				while((errorPipes = errorPipesStream.readLine()) != null){
-				    warning += "[IXA-PIPES] " + errorPipes;
-				}
-				errorPipesStream.close();
-			    }
-
-			    pPipes.waitFor();
-
-			}
-
-			KAFDocument naf = KAFDocument.createFromStream(reader);
+		    List<WF> wfs = naf.getWFs();
+		    if(nwords == -1){
 			int offset = 0;
-			List<WF> wfs = naf.getWFs();
 			for (int i = 0; i < wfs.size(); i++) {
 			    WF wf = wfs.get(i);
 			    if (offset != wf.getOffset()){
@@ -132,52 +120,8 @@ public class TnCIndex {
 			    rawText += wf.getForm();
 			    offset += wf.getLength();
 			}
-			List<Mark> markables = naf.getMarks(markSource);
-			for(Mark mark : markables){
-			    String concept = mark.getExternalRefs().get(0).getReference().replace(markUrl,"");
-			    wikiText += " " + concept;
-			}
-			if(wikiText.equals("")){
-			    warning += " No wikipedia concepts for document " + docId + ".";
-			}
-	   
-			solrDoc.addField("concepts", wikiText);
 		    }
 		    else{ // Index only first N or last N tokens for each NAF document
-			Reader reader;
-			if(type.equals("concepts-naf")){ //The input document is already a NAF document
-			    reader = new BufferedReader(new FileReader(file.getName()));
-			}
-			else{
-			    // run ixa-pipes
-			    String ixaPipes = "cat " + docDir + "/" + file.getName() + " | sh ixa-pipe-tok-" + lang + ".sh | sh ixa-pipe-pos-" + lang + ".sh |sh ixa-pipe-wikify-" + lang + ".sh";
-			    String[] cmdPipes = {
-				"/bin/sh",
-				"-c",
-				ixaPipes
-			    };
-
-			    Process pPipes = Runtime.getRuntime().exec(cmdPipes);
-
-			    String outputPipes = "";
-			    String outputLinePipes = "";
-			    reader = new BufferedReader(new InputStreamReader(pPipes.getInputStream(), "UTF-8"));
-
-			    if(debug.equals("true")){
-				String errorPipes = "";
-				BufferedReader errorPipesStream = new BufferedReader(new InputStreamReader(pPipes.getErrorStream()));
-				while((errorPipes = errorPipesStream.readLine()) != null){
-				    warning += "[IXA-PIPES] " + errorPipes;
-				}
-				errorPipesStream.close();
-			    }
-
-			    pPipes.waitFor();
-
-			}
-
-			KAFDocument naf = KAFDocument.createFromStream(reader);
-			List<WF> wfs = naf.getWFs();
 			int ntokensDoc = wfs.size();
 			int begin = -1;
 			int end = -1;
@@ -218,23 +162,24 @@ public class TnCIndex {
 			    rawText += wf.getForm();
 			    offset += wf.getLength();
 			}
-			if(type.equals("concepts") || type.equals("concepts-naf")){
-			    String wikiText = "";
-			    List<Mark> markables = naf.getMarks(markSource);
-			    for(Mark mark : markables){
-				String concept = mark.getExternalRefs().get(0).getReference().replace(markUrl,"");
-				wikiText += " " + concept;
-			    }
-			   
-			    if(wikiText.equals("")){
-				warning += " No wikipedia concepts for document " + docId + ".";
-			    }
-			    solrDoc.addField("concepts", wikiText);
-			}
-
 		    }
-		    
-		    solrDoc.addField("text", rawText);
+		    solrDoc.addField("text_" + lang, rawText);
+
+		    List<Mark> markables = naf.getMarks(markSource);
+		    for(Mark mark : markables){
+			ExternalRef extRef1 = mark.getExternalRefs().get(0);
+			if(lang.equals("en")){
+			    wikiText += extRef1.getReference().replace(markUrl,"") + " ";
+			}
+			else if(lang.equals("es") && extRef1.getExternalRefs().size() > 0){
+			    wikiText += extRef1.getExternalRefs().get(0).getReference().replace(markUrl,"") + " ";
+			}
+		    }
+		    if(wikiText.equals("")){
+			warning += " No wikipedia concepts for document " + docId + ".";
+		    }
+		    solrDoc.addField("concepts", wikiText);
+
 		    solrjClient.index(solrDoc);
 		    numIndexed++;
 		    if(numIndexed%1000 == 0){
@@ -242,12 +187,14 @@ public class TnCIndex {
 		    }
 		}
 	    }
-
+	    
 	} catch(FileNotFoundException e) {
 	    e.printStackTrace();
 	} catch(IOException e){
 	    e.printStackTrace();
 	} catch(JDOMException e){
+	    e.printStackTrace();
+	} catch(Exception e){
 	    e.printStackTrace();
 	}
 	finally{

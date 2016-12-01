@@ -35,6 +35,7 @@ import org.apache.commons.io.FileUtils;
 import org.jdom2.JDOMException;
 import ixa.kaflib.KAFDocument;
 import ixa.kaflib.Mark;
+import ixa.kaflib.ExternalRef;
 import org.springframework.web.multipart.MultipartFile;
 
 
@@ -69,7 +70,8 @@ public class TnCConcepts {
 	    String outputPipes = "";
 	    String outputLinePipes = "";
 	    Reader reader = new BufferedReader(new InputStreamReader(pPipes.getInputStream(), "UTF-8"));
-	       
+	    KAFDocument naf = KAFDocument.createFromStream(reader);
+
 	    if(debug.equals("true")){
 		String errorPipes = "";
 		BufferedReader errorPipesStream = new BufferedReader(new InputStreamReader(pPipes.getErrorStream()));
@@ -79,19 +81,27 @@ public class TnCConcepts {
 		errorPipesStream.close();
 	    }
 
-	    KAFDocument naf = KAFDocument.createFromStream(reader);
+	    pPipes.waitFor();
+
 	    List<Mark> markables = naf.getMarks(markSource);
 	    if(markables.size() == 0){
 		warning += " No wikipedia concepts.";
 	    }
 	    for(Mark mark : markables){
-		String concept = mark.getExternalRefs().get(0).getReference().replace(markUrl,"");
-		listConcepts.add(concept);
+		ExternalRef extRef1 = mark.getExternalRefs().get(0);
+		if(lang.equals("en")){
+		    listConcepts.add(extRef1.getReference().replace(markUrl,""));
+		}
+		else if(lang.equals("es") && extRef1.getExternalRefs().size() > 0){
+		    listConcepts.add(extRef1.getExternalRefs().get(0).getReference().replace(markUrl,""));
+		}
 	    }
 	    
 	} catch (JDOMException e){
 	    e.printStackTrace();
 	} catch (IOException e){
+	    e.printStackTrace();
+	} catch (Exception e){
 	    e.printStackTrace();
 	}
 	finally{
