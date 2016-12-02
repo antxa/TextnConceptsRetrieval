@@ -34,20 +34,20 @@ The contents of the module are the following:
 ## TABLE OF CONTENTS
 
 1. [INSTALLATION](#installation)
-  + [1.1. Install JDK 1.8](#1. Install JDK 1.8)
-  + [1.2. Install MAVEN 3](#2. Install MAVEN 3)
-  + [1.3. Get and compile module source code](#3. Get and compile module source code)
-  + [1.4. Get the IXA pipes tools](#4. Get the IXA pipes tools)
-  + [1.5. Install Docker](#5. Install Docker)
-  + [1.6. Build Docker image](#6. Build Docker image)
+  + [1.1. Install JDK 1.8](#1-install-jdk-18)
+  + [1.2. Install MAVEN 3](#2-install-maven-3)
+  + [1.3. Get and compile module source code](#3-get-and-compile-module-source-code)
+  + [1.4. Get the IXA pipes tools](#4-get-the-ixa-pipes-tools)
+  + [1.5. Install Docker](#5-install-docker)
+  + [1.6. Build Docker image](#6-build-docker-image)
 
 2. [USAGE](#usage)
-  + [2.1. Run the Docker image](#1. Run the Docker image)
-  + [2.2. Check API documentaion](#2. Check API documentation)
-  + [2.3. Index a single document](#3. Index a single document)
-  + [2.4. Index all the documents in a directory](#4. Index all the documents in a directory)
-  + [2.5. Retrieve documents](#5. Retrieve documents)
-  + [2.6. Get concepts](#6. Get concepts)
+  + [2.1. Run the Docker image](#1-run-the-docker-image)
+  + [2.2. Check API documentaion](#2-check-api-documentation)
+  + [2.3. Index a single document](#3-index-a-single-document)
+  + [2.4. Index all the documents in a directory](#4-index-all-the-documents-in-a-directory)
+  + [2.5. Retrieve documents](#5-retrieve-documents)
+  + [2.6. Get concepts](#6-get-concepts)
 
 
 ## INSTALLATION
