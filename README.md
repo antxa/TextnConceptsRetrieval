@@ -195,7 +195,7 @@ Once the docker image is running, you can check the API documentation
 using the user interface or the JSON API following the links below:
 
 ````shell
-http://localhost:8080/swagger-ui.html
+[http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 http://localhost:8080/v2/api-docs 
 ````
 
