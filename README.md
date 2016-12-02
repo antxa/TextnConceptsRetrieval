@@ -194,10 +194,8 @@ The RESTful API is documented using [Swagger](http://swagger.io/).
 Once the docker image is running, you can check the API documentation
 using the user interface or the JSON API following the links below:
 
-````shell
 [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-http://localhost:8080/v2/api-docs 
-````
+[http://localhost:8080/v2/api-docs](http://localhost:8080/v2/api-docs)
 
 
 ### 3. Index a single document
