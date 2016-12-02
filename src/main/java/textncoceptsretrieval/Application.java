@@ -124,10 +124,11 @@ public class Application {
     }
 
 
-    @ApiOperation(value = "Index documents", notes = "Index documents from a directory", response = ResultIndex.class)
+    @ApiOperation(value = "Index a single document", notes = "Index a single document, passed in the request body", response = ResultIndex.class)
     @RequestMapping(value = "/index", method = RequestMethod.POST, produces = "application/json")
     @ApiImplicitParams({
-	    @ApiImplicitParam(name = "docsDir", value = "Path to a directory containing the documents to be indexed. It should be 'docs4indexing' or a subdirectory inside this directory", required = true, defaultValue = "", dataType = "string", paramType = "query"),
+	    @ApiImplicitParam(name = "doc", value = "Text file sent as body parameter. The content of the file (text) and the concepts derived from it will be indexed", required = true, dataType = "MultipartFile", paramType = "body"),
+		@ApiImplicitParam(name = "id", value = "Document id", required = true, dataType = "string", paramType = "query"),
 		@ApiImplicitParam(name = "lang", value = "Language of the documents", allowableValues = "en, es", required = true, dataType = "string", paramType = "query"),
 		@ApiImplicitParam(name = "mark", value = "Value of the 'source' attribute of 'mark' elements in NAF documents to be used as concepts", required = false, defaultValue = "DBpedia_spotlight", dataType = "string", paramType = "query"),
 		@ApiImplicitParam(name = "url", value = "Base of the URL in 'reference' attribute of the English 'externalRef' element in NAF documents", required = false, defaultValue = "http://dbpedia.org/resource/", dataType = "string", paramType = "query"),
@@ -137,7 +138,8 @@ public class Application {
 		@ApiImplicitParam(name = "port", value = "Port number where Solr server is running", required = false, defaultValue = "8983", dataType = "string", paramType = "query"),
 		@ApiImplicitParam(name = "index", value = "Solr index name", required = false, defaultValue = "textnconcepts", dataType = "string", paramType = "query"),
 		@ApiImplicitParam(name = "debug", allowableValues = "true, false", required = false, defaultValue = "false", dataType = "string", paramType = "query")})	
-		public ResultIndex index(@RequestParam(value="docsDir", required=true) String docsDir,
+		public ResultIndex index(@RequestParam(value="doc", required=true) MultipartFile doc,
+					 @RequestParam(value="id", required=true) String id,
 					 @RequestParam(value="lang", required=true) String lang,
 					 @RequestParam(value="mark", required=false, defaultValue="DBpedia_spotlight") String markSource,
 					 @RequestParam(value="url", required=false, defaultValue="http://dbpedia.org/resource/") String markUrl,
@@ -172,12 +174,66 @@ public class Application {
 	}
 
 	TnCIndex tncIndex = new TnCIndex(host, port, index);
-	ResultIndex result = tncIndex.index(docsDir, lang, markSource, markUrl, Integer.parseInt(nwords), shorter, index, debug);
+	ResultIndex result = tncIndex.index(doc, id, lang, markSource, markUrl, Integer.parseInt(nwords), shorter, index, debug);
 
 	return result;
     }
 
-    
+
+@ApiOperation(value = "Index documents", notes = "Index documents from a directory", response = ResultIndex.class)
+    @RequestMapping(value = "/indexdir", method = RequestMethod.POST, produces = "application/json")
+    @ApiImplicitParams({
+	    @ApiImplicitParam(name = "docsDir", value = "Path to a directory containing the documents to be indexed. It should be 'docs4indexing' or a subdirectory inside this directory", required = true, defaultValue = "", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "lang", value = "Language of the documents", allowableValues = "en, es", required = true, dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "mark", value = "Value of the 'source' attribute of 'mark' elements in NAF documents to be used as concepts", required = false, defaultValue = "DBpedia_spotlight", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "url", value = "Base of the URL in 'reference' attribute of the English 'externalRef' element in NAF documents", required = false, defaultValue = "http://dbpedia.org/resource/", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "nwords", value = "Number of words to index from each document. '-1' for indexing all words", required = false, defaultValue = "-1", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "shorter", value = "Makes all the document shorter. It indexes part of each document. FIRST or LAST nwords of each document will be indexed", allowableValues = "first, last", required = false, defaultValue = "first", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "host", value = "Hostname where Solr server is running", required = false, defaultValue = "localhost", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "port", value = "Port number where Solr server is running", required = false, defaultValue = "8983", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "index", value = "Solr index name", required = false, defaultValue = "textnconcepts", dataType = "string", paramType = "query"),
+		@ApiImplicitParam(name = "debug", allowableValues = "true, false", required = false, defaultValue = "false", dataType = "string", paramType = "query")})	
+		public ResultIndex indexdir(@RequestParam(value="docsDir", required=true) String docsDir,
+					 @RequestParam(value="lang", required=true) String lang,
+					 @RequestParam(value="mark", required=false, defaultValue="DBpedia_spotlight") String markSource,
+					 @RequestParam(value="url", required=false, defaultValue="http://dbpedia.org/resource/") String markUrl,
+					 @RequestParam(value="nwords", required=false, defaultValue="-1") String nwords,
+					 @RequestParam(value="shorter", required=false, defaultValue="first") String shorter,
+					 @RequestParam(value="host", required=false, defaultValue="localhost") String host,
+					 @RequestParam(value="port", required=false, defaultValue="8983" ) String port,
+					 @RequestParam(value="index", required=false, defaultValue="textnconcepts") String index,
+					 @RequestParam(value="debug", required=false, defaultValue="false") String debug)
+	throws UnsatisfiedServletRequestParameterException {
+
+	if(!lang.equals("en") && !lang.equals("es")){
+	    String[] paramConditions = {"en","es"};
+	    String[] actual = {lang};
+	    Map<String,String[]> actualParams = new HashMap<String, String[]>();
+	    actualParams.put("lang", actual);
+	    throw new UnsatisfiedServletRequestParameterException(paramConditions,actualParams);
+	}
+	if(!shorter.equals("first") && !shorter.equals("last")){
+	    String[] paramConditions = {"first","last"};
+	    String[] actual = {shorter};
+	    Map<String,String[]> actualParams = new HashMap<String, String[]>();
+	    actualParams.put("shorter", actual);
+	    throw new UnsatisfiedServletRequestParameterException(paramConditions,actualParams);
+	}
+	if(!debug.equals("true") && !debug.equals("false")){
+	    String[] paramConditions = {"true","false"};
+	    String[] actual = {debug};
+	    Map<String,String[]> actualParams = new HashMap<String, String[]>();
+	    actualParams.put("debug", actual);
+	    throw new UnsatisfiedServletRequestParameterException(paramConditions,actualParams);
+	}
+
+	TnCIndex tncIndex = new TnCIndex(host, port, index);
+	ResultIndex result = tncIndex.indexdir(docsDir, lang, markSource, markUrl, Integer.parseInt(nwords), shorter, index, debug);
+
+	return result;
+    }
+
+   
     @ApiOperation(value = "Get concepts", notes = "Given a document, returns a list of concepts derived from the document", response = ResultQuery.class)
     @RequestMapping(value = "/concepts", method = RequestMethod.POST, produces = "application/json" )
     @ApiImplicitParams({

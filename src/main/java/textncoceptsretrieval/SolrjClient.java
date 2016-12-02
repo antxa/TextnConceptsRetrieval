@@ -39,14 +39,17 @@ public class SolrjClient {
     }
 
     
-    public void index(SolrInputDocument solrDoc){
+    public UpdateResponse index(SolrInputDocument solrDoc){
+	UpdateResponse response = null;
 	try{
-	    UpdateResponse response = client.add(solrDoc);
+	    response = client.add(solrDoc);
 	}catch(SolrServerException e){
 	    e.printStackTrace();
 	} catch(IOException e){
 	    e.printStackTrace();
 	}
+
+	return response;
     }
 
 
