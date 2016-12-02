@@ -168,17 +168,17 @@ docker run -v $PWD/index:/opt/solr/server/solr/mycores -v $PWD/docs4indexing:/do
 ````
 
 Using one of the above commands, we create a container and start some
-processes on it. Note that we mount the 'index' and 'docs4indexing'
-folders in the Docker container. The owner of the 'index' folder has
-to be 8983 to be accesible by Solr.
+processes on it. Note that:
+  + We mount the 'index' and 'docs4indexing' folders in the Docker container. The owner of the 'index' folder has to be 8983 to be accesible by Solr.
+  + As two DBpedia Spotlight servers are launched inside the container (one for English and another one for Spanish), at least 14GB of RAM memory are needed.
 
 The difference between these two commands is the last argument
 ('start-bash' or 'start'). Using the first one, after initializing the
 container, a bash prompt into a running docker will be available.
 
-Now Solr server is up listening on port 8983. You can access using
-your navigator the Solr admin interface and the browse interface of
-the already created 'textnconcepts' index here:
+Now Solr server is up listening on port 8983. You can access the Solr
+admin interface and the browse interface of the already created
+'textnconcepts' index using your browser following these links:
 
 [http://localhost:8983/solr/#/textnconcepts](http://localhost:8983/solr/#/textnconcepts)
 
