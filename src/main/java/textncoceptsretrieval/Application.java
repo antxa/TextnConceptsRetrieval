@@ -234,7 +234,7 @@ public class Application {
     }
 
    
-    @ApiOperation(value = "Get concepts", notes = "Given a document, returns a list of concepts derived from the document", response = ResultQuery.class)
+    @ApiOperation(value = "Get concepts", notes = "Given a document, returns a list of concepts derived from the document", response = ResultConcepts.class)
     @RequestMapping(value = "/concepts", method = RequestMethod.POST, produces = "application/json" )
     @ApiImplicitParams({
 	    @ApiImplicitParam(name = "doc", value = "Text file sent as body parameter", required = true, dataType = "MultipartFile", paramType = "body"),

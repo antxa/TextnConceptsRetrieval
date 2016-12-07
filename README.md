@@ -214,7 +214,7 @@ curl -F "doc=@file.txt" localhost:8080/index?"id=id1&lang=en"
 ````
 
 Check all the available parameters for [`index` request in the Swagger
-UI](http://localhost:8080/swagger-ui.html#!/application/indexUsingPOST)
+UI](http://localhost:8080/swagger-ui.html#!/application/indexUsingPOST).
 
 Remember that you can check the updated index information on the Solr
 admin interface:
@@ -239,7 +239,7 @@ curl localhost:8080/indexdir?"docsDir=docs4indexing&lang=en"
 'docsDir' and 'lang' parameters are mandatory (optional values for
 language are 'en' or 'es'). Check all the rest parameters for
 [`indexdir` request in the Swagger
-UI](http://localhost:8080/swagger-ui.html#!/application/indexdirUsingPOST)
+UI](http://localhost:8080/swagger-ui.html#!/application/indexdirUsingPOST).
 
 Remember that you can check the updated index information on the Solr
 admin interface:
@@ -270,7 +270,7 @@ curl -F "qfile=@query.txt" localhost:8080/query?"lang=en&type=cross&ndocs=100"
 ````
 
 Check all the available parameters for [`query` request in the Swagger
-UI](http://localhost:8080/swagger-ui.html#!/application/queryUsingPOST)
+UI](http://localhost:8080/swagger-ui.html#!/application/queryUsingPOST).
 
 
 ### 6. Get concepts
@@ -285,7 +285,7 @@ curl -F "doc=@file.txt" localhost:8080/concepts?lang=en
 ````
 
 Check all the available parameters for [`concepts` request in the Swagger
-UI](http://localhost:8080/swagger-ui.html#!/application/conceptsUsingPOST)
+UI](http://localhost:8080/swagger-ui.html#!/application/conceptsUsingPOST).
 
 
 
